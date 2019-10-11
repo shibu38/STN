@@ -32,7 +32,7 @@ class DigitClassifier():
                                                  shuffle=self.shuffle)
         return dataloader
 
-    def save_model(self, epoch, training_loss, save_path):        
+    def save_model(self, epoch, training_loss, save_path):
         filename = os.path.join(save_path, str('ep' + str(epoch) + '.pth.tar'))
         torch.save({
             'epoch': epoch,
@@ -40,7 +40,7 @@ class DigitClassifier():
             'optimizer': self.optimizer.state_dict(),
             'training_loss': training_loss
         }, filename)
-        print('Model saved successfullt at epoch : ',epoch)
+        print('Model saved successfullt at epoch : ', epoch)
 
     def train_epoch(self, data_loader, epoch):
         self.model.train()
@@ -84,23 +84,52 @@ class DigitClassifier():
         #               accuracy))
         return accuracy, test_loss
 
-    def train_model(self, num_epoch=100, train_dir='./data/', test_dir='./test1/',save_path='./saved_models'):
-        save_path=os.path.join(save_path,str(datetime.now()).split('.')[0])
+    def train_model(self, num_epoch=100, train_dir='./data/', test_dir='./test1/', save_path='./saved_models'):
+        save_path = os.path.join(save_path, str(datetime.now()).split('.')[0])
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        print('Saving models at ',save_path)
+        print('Saving models at ', save_path)
         train_dataloader = self.make_dataloader(data_dir=train_dir)
         test_dataloader = self.make_dataloader(data_dir=test_dir)
         for epoch in range(1, num_epoch + 1):
             training_loss = self.train_epoch(train_dataloader, epoch)
             test_accuracy, test_loss = self.test(test_dataloader)
-            print('Test accuracy at epoch : ',epoch,' is ',test_accuracy,'and loss is ',test_loss)
+            print('Test accuracy at epoch : ', epoch, ' is ', test_accuracy, 'and loss is ', test_loss)
             self.validation_acc.add_scalar('Acc/Val', test_accuracy, epoch)
             self.validation_acc.add_scalar('Loss/Val', test_loss, epoch)
-            if epoch%1==0:
-                self.save_model(epoch, training_loss,save_path)
+            if epoch % 1 == 0:
+                self.save_model(epoch, training_loss, save_path)
+
+
+def load_model(model, path):
+    if os.path.isfile(path):
+        print('Loading checkpoint from ', path)
+        checkpoint = torch.load(path)
+        model.load_state_dict(checkpoint['state_dict'])
+        model.eval()
+        return model
+
+
+def test_model(model, data_loader):
+    model.eval()
+    correct = 0
+    for data, target in data_loader:
+        data, target = data.to(device), target.to(device)
+        output = model(data)
+        # get the index of the max log-probability
+        pred = output.max(1, keepdim=True)[1]
+        correct += pred.eq(target.view_as(pred)).sum().item()
+
+    accuracy = 100. * correct / len(data_loader.dataset)
+    return accuracy, pred.item(), output.item()
 
 
 if __name__ == "__main__":
     classifier = DigitClassifier()
-    classifier.train_model()
+    # classifier.train_model()
+    test_dir = './test1/'
+    test_dataloader = classifier.make_dataloader(test_dir)
+    checkpoint_path = './saved_models/'
+    model = Model()
+    model = load_model(model, checkpoint_path)
+    test_model(model, test_dataloader)
