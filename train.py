@@ -106,7 +106,9 @@ def load_model(model, path):
         print('Loading checkpoint from ', path)
         checkpoint = torch.load(path)
         model.load_state_dict(checkpoint['state_dict'])
+        model.to(device)
         model.eval()
+        print('Model loaded sucessfully')
         return model
 
 
@@ -121,7 +123,7 @@ def test_model(model, data_loader):
         correct += pred.eq(target.view_as(pred)).sum().item()
 
     accuracy = 100. * correct / len(data_loader.dataset)
-    return accuracy, pred.item(), output.item()
+    return accuracy, pred.cpu().detach().numpy(), output.cpu().detach().numpy()
 
 
 if __name__ == "__main__":
@@ -129,7 +131,10 @@ if __name__ == "__main__":
     # classifier.train_model()
     test_dir = './test1/'
     test_dataloader = classifier.make_dataloader(test_dir)
-    checkpoint_path = './saved_models/'
+    checkpoint_path = './saved_models/2019-10-11 13:16:18/ep1.pth.tar'
     model = Model()
     model = load_model(model, checkpoint_path)
-    test_model(model, test_dataloader)
+    accuracy, pred, output=test_model(model, test_dataloader)
+    print(accuracy)
+    print(pred)
+    print(output)
