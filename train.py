@@ -2,6 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import os
+from datetime import datetime
 
 from dataloader import Classifier
 from model import Model
@@ -31,9 +32,7 @@ class DigitClassifier():
                                                  shuffle=self.shuffle)
         return dataloader
 
-    def save_model(self, epoch, training_loss, save_path='./saved_models'):
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+    def save_model(self, epoch, training_loss, save_path):        
         filename = os.path.join(save_path, str('ep' + str(epoch) + '.pth.tar'))
         torch.save({
             'epoch': epoch,
@@ -41,6 +40,7 @@ class DigitClassifier():
             'optimizer': self.optimizer.state_dict(),
             'training_loss': training_loss
         }, filename)
+        print('Model saved successfullt at epoch : ',epoch)
 
     def train_epoch(self, data_loader, epoch):
         self.model.train()
@@ -84,15 +84,21 @@ class DigitClassifier():
         #               accuracy))
         return accuracy, test_loss
 
-    def train_model(self, num_epoch=100, train_dir='./data/', test_dir='./test1/'):
+    def train_model(self, num_epoch=100, train_dir='./data/', test_dir='./test1/',save_path='./saved_models'):
+        save_path=os.path.join(save_path,str(datetime.now()).split('.')[0])
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        print('Saving models at ',save_path)
         train_dataloader = self.make_dataloader(data_dir=train_dir)
         test_dataloader = self.make_dataloader(data_dir=test_dir)
         for epoch in range(1, num_epoch + 1):
             training_loss = self.train_epoch(train_dataloader, epoch)
             test_accuracy, test_loss = self.test(test_dataloader)
+            print('Test accuracy at epoch : ',epoch,' is ',test_accuracy,'and loss is ',test_loss)
             self.validation_acc.add_scalar('Acc/Val', test_accuracy, epoch)
             self.validation_acc.add_scalar('Loss/Val', test_loss, epoch)
-            self.save_model(epoch, training_loss)
+            if epoch%1==0:
+                self.save_model(epoch, training_loss,save_path)
 
 
 if __name__ == "__main__":

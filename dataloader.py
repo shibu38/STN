@@ -30,6 +30,13 @@ class Classifier(Dataset):
             image = self.transforms(image)
         except:
             print('Error in file ',self.image_paths[index])
+            if index==0:
+                index=index+1
+            else:
+                index=index-1
+            image=cv2.imread(self.image_paths[index],cv2.IMREAD_GRAYSCALE)
+            label = self.labels[index]
+            image = self.transforms(image)
         # print(image.shape)
         # print(type(image))
         return (image, label)
