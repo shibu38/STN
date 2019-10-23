@@ -1,7 +1,7 @@
 import os
 import cv2
-import skimage.io as io
-from PIL import Image
+# import skimage.io as io
+# from PIL import Image
 
 import torch
 from torch.utils.data.dataset import Dataset
@@ -10,22 +10,19 @@ from torchvision import transforms
 
 class Classifier(Dataset):
     def __init__(self, root_dir, height, width, grayscale):
-        if grayscale:
-            self.grayscale = True
         self.root_dir = root_dir
         self.height = height
         self.width = width
         self.image_paths, self.labels = self.readDataset()
         # print(self.image_paths)
-        self.transforms = transforms.Compose([transforms.ToPILImage(),
-                                            transforms.Resize((self.width, self.height)),
-                                              transforms.ToTensor()])
+        self.transforms = transforms.Compose([transforms.ToTensor()])
 
     def __getitem__(self, index):
         # image = io.imread(self.image_paths[index], as_gray=self.grayscale)
         # image = Image.fromarray(image)
         try:
-            image=cv2.imread(self.image_paths[index],cv2.IMREAD_GRAYSCALE)
+            image=cv2.imread(self.image_paths[index])
+            image=cv2.resize(image,(self.width,self.height))
             label = self.labels[index]
             image = self.transforms(image)
         except:
@@ -34,7 +31,8 @@ class Classifier(Dataset):
                 index=index+1
             else:
                 index=index-1
-            image=cv2.imread(self.image_paths[index],cv2.IMREAD_GRAYSCALE)
+            image=cv2.imread(self.image_paths[index])
+            image=cv2.resize(image,(self.width,self.height))
             label = self.labels[index]
             image = self.transforms(image)
         # print(image.shape)

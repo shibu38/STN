@@ -5,15 +5,15 @@ import os
 from datetime import datetime
 
 from dataloader import Classifier
-from model import Model
+from models.torch_vgg16 import VGG16 as Model
 
-from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class DigitClassifier():
-    def __init__(self, width=28, height=28, batch_size=64, learning_rate=0.0001, grayscale=True, shuffle=True):
+    def __init__(self, width=32, height=40, batch_size=64, learning_rate=0.00005, grayscale=True, shuffle=True):
         self.width = width
         self.height = height
         self.grayscale = grayscale
@@ -51,7 +51,7 @@ class DigitClassifier():
             labels = labels.to(device)
             self.optimizer.zero_grad()
             output = self.model(images)
-            loss = F.nll_loss(output, labels)
+            loss = F.cross_entropy(output, labels)
             loss.backward()
             self.optimizer.step()
             if batch_idx % 10 == 0:
@@ -72,7 +72,7 @@ class DigitClassifier():
             output = self.model(data)
 
             # sum up batch loss
-            test_loss += F.nll_loss(output, target, size_average=False).item()
+            test_loss += F.cross_entropy(output, target, size_average=True).item()
             # get the index of the max log-probability
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -97,14 +97,14 @@ class DigitClassifier():
             print('Test accuracy at epoch : ', epoch, ' is ', test_accuracy, 'and loss is ', test_loss)
             self.validation_acc.add_scalar('Acc/Val', test_accuracy, epoch)
             self.validation_acc.add_scalar('Loss/Val', test_loss, epoch)
-            if epoch % 1 == 0:
+            if epoch % 5 == 0:
                 self.save_model(epoch, training_loss, save_path)
 
 
 def load_model(model, path):
     if os.path.isfile(path):
         print('Loading checkpoint from ', path)
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path,map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint['state_dict'])
         model.to(device)
         model.eval()
@@ -128,13 +128,13 @@ def test_model(model, data_loader):
 
 if __name__ == "__main__":
     classifier = DigitClassifier()
-    # classifier.train_model()
-    test_dir = './test1/'
+    # classifier.train_model(train_dir='../class_data/',test_dir='../class_data/')
+    test_dir = './data/'
     test_dataloader = classifier.make_dataloader(test_dir)
-    checkpoint_path = './saved_models/2019-10-11 13:16:18/ep1.pth.tar'
+    checkpoint_path = './saved_models/ep60.pth.tar'
     model = Model()
     model = load_model(model, checkpoint_path)
-    accuracy, pred, output=test_model(model, test_dataloader)
+    accuracy, pred, output = test_model(model, test_dataloader)
     print(accuracy)
-    print(pred)
-    print(output)
+    # print(pred)
+    # print(output)

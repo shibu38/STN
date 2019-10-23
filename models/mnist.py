@@ -35,19 +35,20 @@ class Model(nn.Module):
 
     # Spatial transformer network forward function
     def stn(self, x):
-        xs = self.localization(x)
-        xs = xs.view(-1, 10 * 3 * 3)
-        theta = self.fc_loc(xs)
+        xs = self.localization(x)   #torch.Size([64, 10, 3, 3])
+        xs = xs.view(-1, 10 * 3 * 3)    #torch.Size([64, 90])
+        theta = self.fc_loc(xs)    #torch.Size([64, 6])
         theta = theta.view(-1, 2, 3)
-
         grid = F.affine_grid(theta, x.size())
         x = F.grid_sample(x, grid)
 
-        return x
+        return x # Same size as that of input x
 
     def forward(self, x):
         # transform the input
+        # print(x.size())
         x = self.stn(x)
+        # print(x.size())
 
         # Perform the usual forward pass
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
